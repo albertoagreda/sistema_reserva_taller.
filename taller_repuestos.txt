@@ -1,0 +1,238 @@
+-- Base de datos: `taller_repuestos`
+-- Propósito: Esquema para el sistema TurboDesk, que gestiona clientes, coches, citas, mensajes de soporte y un log de eliminaciones de coches.
+-- Creado para el caso práctico de desarrollo de aplicaciones de gestión integrada.
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+-- Configuración de codificación para soportar caracteres UTF-8
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+-- --------------------------------------
+-- Estructura de la tabla `clientes`
+-- Almacena información de los clientes del taller (nombre, apellidos, correo).
+-- --------------------------------------
+CREATE TABLE `clientes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Identificador único del cliente',
+  `nombre` varchar(50) NOT NULL COMMENT 'Nombre del cliente',
+  `apellidos` varchar(50) NOT NULL COMMENT 'Apellidos del cliente',
+  `correo` varchar(100) NOT NULL COMMENT 'Correo electrónico único del cliente',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_correo` (`correo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tabla para almacenar datos de clientes';
+
+-- --------------------------------------
+-- Volcado de datos para la tabla `clientes`
+-- Datos de ejemplo para pruebas.
+-- --------------------------------------
+INSERT INTO `clientes` (`id`, `nombre`, `apellidos`, `correo`) VALUES
+(1, 'Juan', 'Pérez García', 'juan.perez@gmail.com'),
+(2, 'María', 'López Fernández', 'maria.lopez@gmail.com'),
+(3, 'Carlos', 'Gómez Ruiz', 'carlos.gomez@gmail.com'),
+(4, 'Ana', 'Martínez Díaz', 'ana.martinez@gmail.com'),
+(5, 'Luis', 'Rodríguez Sánchez', 'luis.rodriguez@gmail.com'),
+(6, 'as', 'as', 'as.as@gmail.com'),
+(7, 'aa', 'scf', 'aa.scf@gmail.com');
+
+-- --------------------------------------
+-- Estructura de la tabla `coches`
+-- Almacena información de los coches gestionados por el taller.
+-- --------------------------------------
+CREATE TABLE `coches` (
+  `COCHE_ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Identificador único del coche',
+  `MODELO` varchar(50) NOT NULL COMMENT 'Modelo del coche',
+  `MARCA` varchar(50) NOT NULL COMMENT 'Marca del coche',
+  `ANIO` int(11) NOT NULL COMMENT 'Año de fabricación del coche',
+  `KILOMETRAJE` int(11) NOT NULL COMMENT 'Kilometraje actual del coche',
+  `detalles` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Detalles adicionales en formato JSON (color, combustible)',
+  CHECK (json_valid(`detalles`)),
+  PRIMARY KEY (`COCHE_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tabla para almacenar datos de coches';
+
+-- --------------------------------------
+-- Volcado de datos para la tabla `coches`
+-- Datos de ejemplo con JSON en el campo `detalles`.
+-- --------------------------------------
+INSERT INTO `coches` (`COCHE_ID`, `MODELO`, `MARCA`, `ANIO`, `KILOMETRAJE`, `detalles`) VALUES
+(1, 'Focus', 'Ford', 2018, 45000, '{"color": "Azul", "combustible": "Gasolina"}'),
+(2, 'Corolla', 'Toyota', 2020, 25000, '{"color": "Blanco", "combustible": "Híbrido"}'),
+(3, 'Golf', 'Volkswagen', 2017, 60000, '{"color": "Negro", "combustible": "Diésel"}'),
+(4, 'Model 3', 'Tesla', 2021, 12000, '{"color": "Rojo", "combustible": "Eléctrico"}'),
+(5, 'Ibiza', 'SEAT', 2019, 22000, '{"color": "Gris", "combustible": "Gasolina"}');
+
+-- --------------------------------------
+-- Estructura de la tabla `citas`
+-- Almacena las citas programadas para los clientes y sus coches.
+-- --------------------------------------
+CREATE TABLE `citas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Identificador único de la cita',
+  `cliente_id` int(11) NOT NULL COMMENT 'ID del cliente asociado (clave foránea)',
+  `coche_id` int(11) NOT NULL COMMENT 'ID del coche asociado (clave foránea)',
+  `fecha` date NOT NULL COMMENT 'Fecha de la cita',
+  PRIMARY KEY (`id`),
+  KEY `cliente_id` (`cliente_id`),
+  KEY `coche_id` (`coche_id`),
+  CONSTRAINT `citas_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `citas_ibfk_2` FOREIGN KEY (`coche_id`) REFERENCES `coches` (`COCHE_ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tabla para gestionar citas del taller';
+
+-- --------------------------------------
+-- Volcado de datos para la tabla `citas`
+-- Datos de ejemplo para citas programadas.
+-- --------------------------------------
+INSERT INTO `citas` (`id`, `cliente_id`, `coche_id`, `fecha`) VALUES
+(1, 1, 1, '2025-05-20'),
+(2, 2, 2, '2025-05-24'),
+(3, 3, 3, '2025-06-01'),
+(4, 6, 2, '2025-05-10'),
+(5, 7, 1, '2025-05-09');
+
+-- --------------------------------------
+-- Estructura de la tabla `soporte`
+-- Almacena mensajes de soporte enviados por los clientes.
+-- --------------------------------------
+CREATE TABLE `soporte` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Identificador único del mensaje',
+  `cliente_id` int(11) NOT NULL COMMENT 'ID del cliente asociado (clave foránea)',
+  `mensaje` text NOT NULL COMMENT 'Contenido del mensaje de soporte',
+  PRIMARY KEY (`id`),
+  KEY `cliente_id` (`cliente_id`),
+  CONSTRAINT `soporte_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tabla para mensajes de soporte';
+
+-- --------------------------------------
+-- Volcado de datos para la tabla `soporte`
+-- Datos de ejemplo para mensajes de soporte.
+-- --------------------------------------
+INSERT INTO `soporte` (`id`, `cliente_id`, `mensaje`) VALUES
+(1, 1, 'El coche no arranca después de la última reparación.'),
+(2, 2, 'Necesito una cita urgente para revisar frenos.'),
+(3, 3, 'Consulta sobre garantía de piezas.');
+
+-- --------------------------------------
+-- Estructura de la tabla `log_coches`
+-- Registra las eliminaciones de coches para auditoría.
+-- --------------------------------------
+CREATE TABLE `log_coches` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Identificador único del log',
+  `coche_id` int(11) NOT NULL COMMENT 'ID del coche eliminado',
+  `accion` varchar(50) NOT NULL COMMENT 'Acción realizada (ej. Eliminado)',
+  `fecha` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha y hora del evento',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tabla para auditoría de eliminaciones de coches';
+
+-- --------------------------------------
+-- Disparador: `after_coche_delete`
+-- Registra en `log_coches` cada vez que se elimina un coche.
+-- --------------------------------------
+DELIMITER $$
+CREATE TRIGGER `after_coche_delete` AFTER DELETE ON `coches` FOR EACH ROW
+BEGIN
+    INSERT INTO log_coches (coche_id, accion, fecha)
+    VALUES (OLD.COCHE_ID, 'Eliminado', NOW());
+END$$
+DELIMITER ;
+
+-- --------------------------------------
+-- Procedimiento: `RegistrarCita`
+-- Registra una cita verificando la disponibilidad de la fecha y la existencia de cliente y coche.
+-- --------------------------------------
+DELIMITER $$
+CREATE PROCEDURE `RegistrarCita` (
+    IN `p_cliente_id` INT, 
+    IN `p_coche_id` INT, 
+    IN `p_fecha` DATE
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error al registrar la cita';
+    END;
+
+    START TRANSACTION;
+    -- Validar que la fecha no esté ocupada
+    IF EXISTS (SELECT 1 FROM citas WHERE fecha = p_fecha) THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fecha ocupada';
+    END IF;
+    -- Validar existencia de cliente
+    IF NOT EXISTS (SELECT 1 FROM clientes WHERE id = p_cliente_id) THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cliente no existe';
+    END IF;
+    -- Validar existencia de coche
+    IF NOT EXISTS (SELECT 1 FROM coches WHERE COCHE_ID = p_coche_id) THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Coche no existe';
+    END IF;
+    -- Validar que la fecha no sea futura más allá de 2025
+    IF YEAR(p_fecha) > 2025 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fecha futura no permitida';
+    END IF;
+    -- Insertar la cita
+    INSERT INTO citas (cliente_id, coche_id, fecha)
+    VALUES (p_cliente_id, p_coche_id, p_fecha);
+    COMMIT;
+END$$
+DELIMITER ;
+
+-- --------------------------------------
+-- Procedimiento: `RegistrarMensajeSoporte`
+-- Registra un mensaje de soporte verificando que no esté vacío y que el cliente exista.
+-- --------------------------------------
+DELIMITER $$
+CREATE PROCEDURE `RegistrarMensajeSoporte` (
+    IN `p_cliente_id` INT, 
+    IN `p_mensaje` TEXT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error al registrar el mensaje';
+    END;
+
+    START TRANSACTION;
+    -- Validar que el mensaje no esté vacío
+    IF p_mensaje IS NULL OR p_mensaje = '' THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Mensaje vacío';
+    END IF;
+    -- Validar existencia de cliente
+    IF NOT EXISTS (SELECT 1 FROM clientes WHERE id = p_cliente_id) THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cliente no existe';
+    END IF;
+    -- Insertar el mensaje
+    INSERT INTO soporte (cliente_id, mensaje)
+    VALUES (p_cliente_id, p_mensaje);
+    COMMIT;
+END$$
+DELIMITER ;
+
+-- --------------------------------------
+-- Índices y restricciones adicionales
+-- --------------------------------------
+ALTER TABLE `citas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+ALTER TABLE `clientes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+ALTER TABLE `log_coches`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `soporte`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
